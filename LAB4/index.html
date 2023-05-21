@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="main.css" type="text/css">
+        
+    </head>
+    <body>
+        <header id="header">
+            <strong>Welcome to INTERNET-PROGRAMMING SHOP</strong>
+        </header>
+        <nav>
+            <a href="index.html"><strong>메인페이지</strong></a>
+            <a href="login.html">로그인</a>
+            <a href="signup.html">회원가입</a>
+        </nav>
+        <hr>
+        <div class = "title">
+            <br>
+            <strong>HTML5</strong>
+                <hr>
+            </div>
+           <div id = "contents">
+            <aside>
+                <form action="">
+                    <div>
+                        <label for="category">Choose a category:</label>
+                        <select name="category" id="category">
+                            <option selected value="all">All</option>
+                            <option value="html">HTML</option>
+                            <option value="css">CSS</option>
+                            <option value="javascript">JavaScript</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="search_term">Enter search term</label>
+                        <input type="text" id="search_term">
+                        <select name="sort" id="sort">
+                            <option selected value="none">None</option>
+                            <option value="descending">Descending order</option>
+                            <option value="ascending">Ascending order</option>
+                        </select>
+                    </div>
+                    <div>
+                        <button id="filter" type="button">Filter results</button>
+                    </div>
+                </form>
+            </aside>
+            <main id = "products"></main>
+        </div> 
+        <script>
+            let products;               // products 정보를 저장한 json 데이터
+            let counter = 0;            // 현재까지 표시한 image 번호
+            let category = "all";       // filter를 위한 category
+            let search_term = "";       // filter를 위한 search_term
+            let sorting = "none";       // sorting 종류
+
+            fetch("https://2020147562.github.io/HomeworkRepository/LAB4/products.json")
+            .then(response => response.json())
+            .then(json => {
+                products = json;
+                init();
+                })
+            .catch(error => console.log("Error:", error));
+
+            // filter 버튼 누르면 filtering된 결과를 보여준다
+            document.addEventListener("DOMContentLoaded", function() {
+                document.getElementById("filter").addEventListener("click", filtering);
+            });
+
+            // infinite scroll을 위해 onscroll event가 발생하면 load() 실행
+            window.onscroll = () => {
+                if ((window.innerHeight + window.pageYOffset) >= document.body.offsetHeight - 1) {
+                    load();
+                }
+            };
+
+            // Documnet Load를 트리거로 호출되는 함수. window를 채울 만큼의 이미지들을 load()한다.
+            function init() {
+                for (let i = 0; i < 2; i++) {
+                    load();
+                }
+                // while(document.body.offsetHeight < window.innerHeight) {
+                //    load();
+                //}
+            }
+
+            // Infinite Scroll 구현을 위해 scroll event가 발생하면 load()를 호출하여 추가적인 이미지들을 append()한다.
+            function load() {
+                let maxappend = 2;
+                let sorted_prices;
+                
+                let ascending_order_prices = ascending_sort();
+                let descending_order_prices = ascending_sort().reverse();
+
+                if (sorting === "ascending") {
+                    sorted_prices = ascending_order_prices;
+                }
+                else if (sorting === "descending") {
+                    sorted_prices = descending_order_prices;
+                }
+                else if (sorting === "none") {
+                    sorted_prices = products;
+                }
+                else {
+                    console.log("something wrong with load() method");
+                }
+                while (maxappend > 0 && counter < products.length) {
+                    if ((category === "all" && sorted_prices[counter].name.includes(search_term))
+                    || (sorted_prices[counter].type.includes(category) && sorted_prices[counter].name.includes(search_term))) {
+                        document.getElementById("products").appendChild(append(sorted_prices[counter]));
+                        maxappend--;
+                    }
+                    counter++;  
+                }
+            }
+
+            // Sorting items in ascending order (price)
+            function ascending_sort() {
+                let prices = [];
+                let sorted_prices = [];
+                for (let i = 0; i < products.length; i++) {
+                    prices.push(products[i]);
+                }
+                for (let j = 0; j < products.length; j++) {
+                    let temp_min = prices[0].price;
+                    let min_index = 0;
+                    let min_product = prices[0];
+                    for (let i = 0; i < prices.length; i++) {
+                        if (prices[i].price < temp_min) {
+                            temp_min = prices[i].price;
+                            min_index = i;
+                            min_product = prices[i];
+                        }
+                    }
+                    sorted_prices.push(min_product);
+                    prices.splice(min_index, 1);
+                }
+                return sorted_prices;
+            }
+
+            // 실제로 이미지들을 append하여 document에 띄울 div 요소를 반환한다.
+            function append(product) {
+                let div = document.createElement("div");
+                let img = document.createElement("img");
+                let p = document.createElement("p");
+                img.classList.add("image");
+                p.classList.add("absolute1");
+                div.appendChild(img);
+                div.appendChild(p);
+
+                img.src = product.image + ".jpg";
+                img.alt = product.name;
+
+                img.addEventListener("click", showinfo);
+
+                p.innerHTML = product.name + "<br>" + product.price + "Won";
+
+                return div;
+            }
+
+            // 추가적인 정보를 보여주기 위하여 해당 정보를 포함하는 p 요소의 z-index를 1->3으로 바꿔준다.
+            function showinfo() {
+                this.nextElementSibling.classList.replace("absolute1", "absolute3");
+                this.classList.add("transparent");
+            }
+
+            // Filter results 버튼을 눌렀을 떄
+            function filtering() {
+                category = document.getElementById("category").value;
+                search_term = document.getElementById("search_term").value;
+                sorting = document.getElementById("sort").value;
+
+                counter = 0;
+
+                clear();
+                init();
+            }
+
+            // FIlter results 버튼을 눌렀을 때 clearing
+            function clear() {
+                let main = document.getElementById("products");
+                while (main.hasChildNodes()) {
+                    main.removeChild(main.childNodes[0]);
+                }
+            }
+        </script>
+    </body>
+</html>
